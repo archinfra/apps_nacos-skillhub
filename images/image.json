@@ -1,0 +1,18 @@
+[
+  {
+    "name": "nacos-server",
+    "arch": "amd64",
+    "platform": "linux/amd64",
+    "pull": "nacos/nacos-server:latest",
+    "tag": "sealos.hub:5000/kube4/nacos-server:latest",
+    "tar": "nacos-server-amd64.tar"
+  },
+  {
+    "name": "nacos-server",
+    "arch": "arm64",
+    "platform": "linux/arm64",
+    "pull": "nacos/nacos-server:latest",
+    "tag": "sealos.hub:5000/kube4/nacos-server:latest",
+    "tar": "nacos-server-arm64.tar"
+  }
+]

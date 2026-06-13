@@ -1,0 +1,6 @@
+dist/
+.build-payload/
+payload.tar.gz
+*.run
+*.sha256
+.DS_Store

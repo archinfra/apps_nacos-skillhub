@@ -1,0 +1,145 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: __NAMESPACE__
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: nacos-auth
+  namespace: __NAMESPACE__
+type: Opaque
+stringData:
+  NACOS_AUTH_TOKEN: "__NACOS_AUTH_TOKEN__"
+  NACOS_AUTH_IDENTITY_KEY: "__NACOS_AUTH_IDENTITY_KEY__"
+  NACOS_AUTH_IDENTITY_VALUE: "__NACOS_AUTH_IDENTITY_VALUE__"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nacos
+  namespace: __NAMESPACE__
+  labels:
+    app.kubernetes.io/name: nacos
+    app.kubernetes.io/instance: nacos-standalone
+spec:
+  type: __SERVICE_TYPE__
+  selector:
+    app.kubernetes.io/name: nacos
+    app.kubernetes.io/instance: nacos-standalone
+  ports:
+    - name: console
+      port: 8080
+      targetPort: console
+      protocol: TCP
+__NODEPORT_CONSOLE__
+    - name: client
+      port: 8848
+      targetPort: client
+      protocol: TCP
+__NODEPORT_CLIENT__
+    - name: grpc
+      port: 9848
+      targetPort: grpc
+      protocol: TCP
+__NODEPORT_GRPC__
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: nacos
+  namespace: __NAMESPACE__
+  labels:
+    app.kubernetes.io/name: nacos
+    app.kubernetes.io/instance: nacos-standalone
+spec:
+  serviceName: nacos
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nacos
+      app.kubernetes.io/instance: nacos-standalone
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nacos
+        app.kubernetes.io/instance: nacos-standalone
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: nacos
+          image: __NACOS_IMAGE__
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: MODE
+              value: "standalone"
+            - name: NACOS_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: nacos-auth
+                  key: NACOS_AUTH_TOKEN
+            - name: NACOS_AUTH_IDENTITY_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: nacos-auth
+                  key: NACOS_AUTH_IDENTITY_KEY
+            - name: NACOS_AUTH_IDENTITY_VALUE
+              valueFrom:
+                secretKeyRef:
+                  name: nacos-auth
+                  key: NACOS_AUTH_IDENTITY_VALUE
+          ports:
+            - name: console
+              containerPort: 8080
+              protocol: TCP
+            - name: client
+              containerPort: 8848
+              protocol: TCP
+            - name: grpc
+              containerPort: 9848
+              protocol: TCP
+          readinessProbe:
+            tcpSocket:
+              port: client
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 12
+          livenessProbe:
+            tcpSocket:
+              port: client
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2"
+              memory: "2Gi"
+          volumeMounts:
+            - name: data
+              mountPath: /home/nacos/data
+            - name: logs
+              mountPath: /home/nacos/logs
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+__STORAGE_CLASS_LINE_DATA__
+        resources:
+          requests:
+            storage: __DATA_STORAGE_SIZE__
+    - metadata:
+        name: logs
+      spec:
+        accessModes:
+          - ReadWriteOnce
+__STORAGE_CLASS_LINE_LOGS__
+        resources:
+          requests:
+            storage: __LOGS_STORAGE_SIZE__
